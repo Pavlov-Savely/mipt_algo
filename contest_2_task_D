@@ -1,0 +1,68 @@
+#include <algorithm>
+#include <iostream>
+#include <stack>
+#include <vector>
+
+void dfs1(int v, std::vector<std::vector<int>>& adj, std::vector<bool>& visited, std::stack<int>& stk) {
+    visited[v] = true;
+    for (int u : adj[v]) {
+        if (!visited[u]) {
+            dfs1(u, adj, visited, stk);
+        }
+    }
+    stk.push(v);
+}
+
+void dfs2(int v, std::vector<std::vector<int>>& adj, std::vector<bool>& visited, std::vector<int>& component, int comp_num) {
+    visited[v] = true;
+    component[v] = comp_num;
+    for (int u : adj[v]) {
+        if (!visited[u]) {
+            dfs2(u, adj, visited, component, comp_num);
+        }
+    }
+}
+
+void findStronglyConnectedComponents(std::vector<std::vector<int>>& adj, std::vector<std::vector<int>>& rev_adj, int n, int& comp_num, std::vector<int>& component) {
+    std::vector<bool> visited(n, false);
+    std::stack<int> stk;
+    for (int i = 0; i < n; ++i) {
+        if (!visited[i]) {
+            dfs1(i, adj, visited, stk);
+        }
+    }
+
+    std::fill(visited.begin(), visited.end(), false);
+    while (!stk.empty()) {
+        int v = stk.top();
+        stk.pop();
+        if (component[v] == -1) {
+            dfs2(v, rev_adj, visited, component, comp_num);
+            ++comp_num;
+        }
+    }
+}
+
+int main() {
+    int n, m;
+    std::cin >> n >> m;
+    std::vector<std::vector<int>> adj(n), rev_adj(n);
+    for (int i = 0; i < m; ++i) {
+        int u, v;
+        std::cin >> u >> v;
+        adj[u - 1].push_back(v - 1);
+        rev_adj[v - 1].push_back(u - 1);
+    }
+
+    int comp_num = 0;
+    std::vector<int> component(n, -1);
+    findStronglyConnectedComponents(adj, rev_adj, n, comp_num, component);
+
+    std::cout << comp_num << std::endl;
+    for (int i = 0; i < n; ++i) {
+        std::cout << component[i] + 1 << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}
