@@ -1,0 +1,121 @@
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <set>
+#include <vector>
+
+const int64_t INF = 1e18;
+
+void input(
+    int64_t n, int64_t m, int64_t k, int64_t& start, int64_t& finish,
+    std::vector<int64_t>& viruses,
+    std::vector<std::vector<std::pair<int64_t, int64_t>>>& adjacency_list) {
+  for (int64_t i = 0; i < k; i++) {
+    std::cin >> viruses[i];
+    viruses[i]--;
+  }
+
+  int64_t u;
+  int64_t v;
+  int64_t time;
+  std::map<std::pair<int64_t, int64_t>, int64_t> history;
+  for (int64_t i = 0; i < m; i++) {
+    std::cin >> u >> v >> time;
+    u--;
+    v--;
+    adjacency_list[u].push_back({v, time});
+    adjacency_list[v].push_back({u, time});
+  }
+  std::cin >> start >> finish;
+  start--;
+  finish--;
+}
+
+void dijkstra_viruses(
+    std::vector<std::vector<std::pair<int64_t, int64_t>>>& adjacency_list,
+    std::vector<int64_t>& dist, std::vector<int64_t>& viruses) {
+  std::set<std::pair<int64_t, int64_t>> heap;
+  // heap.insert({0, s});
+  for (int64_t virus : viruses) {
+    heap.insert({0, virus});
+    dist[virus] = 0;
+  }
+
+  while (!heap.empty()) {
+    auto best_edge = *heap.begin();
+    auto best_vertex = best_edge.second;
+    auto best_weight = best_edge.first;
+    heap.erase(heap.begin());
+
+    for (auto& [neighbour, time] : adjacency_list[best_vertex]) {
+      if (dist[neighbour] > (int64_t)time + best_weight) {
+        heap.erase({dist[neighbour], neighbour});
+        dist[neighbour] = time + best_weight;
+        heap.insert({dist[neighbour], neighbour});
+      }
+    }
+  }
+}
+
+void dijkstra_mission(
+    int64_t s,
+    std::vector<std::vector<std::pair<int64_t, int64_t>>>& adjacency_list,
+    std::vector<int64_t>& dist, std::vector<int64_t>& dist_viruses) {
+  std::set<std::pair<int64_t, int64_t>> heap;
+  heap.insert({0, s});
+
+  dist[s] = 0;
+
+  while (!heap.empty()) {
+    auto best_edge = *heap.begin();
+    auto best_vertex = best_edge.second;
+    auto best_weight = best_edge.first;
+    heap.erase(heap.begin());
+
+    for (auto& [neighbour, time] : adjacency_list[best_vertex]) {
+      if (dist_viruses[neighbour] > time + best_weight &&
+          dist[neighbour] > time + best_weight) {
+        heap.erase({dist[neighbour], neighbour});
+        dist[neighbour] = time + best_weight;
+        heap.insert({dist[neighbour], neighbour});
+      }
+    }
+  }
+}
+
+int64_t calc_min_time(
+    int64_t n, int64_t m, int64_t k, int64_t start, int64_t finish,
+    std::vector<int64_t>& viruses,
+    std::vector<std::vector<std::pair<int64_t, int64_t>>>& adjacency_list) {
+  std::vector<int64_t> dist_viruses(n, INF);
+  dijkstra_viruses(adjacency_list, dist_viruses, viruses);
+
+  std::vector<int64_t> dist_mission(n, INF);
+  dijkstra_mission(start, adjacency_list, dist_mission, dist_viruses);
+
+  if (dist_mission[finish] == INF) {
+    return -1;
+  }
+
+  return dist_mission[finish];
+}
+
+int main() {
+  int64_t n;
+  int64_t m;
+  int64_t k;
+
+  std::cin >> n >> m >> k;
+
+  int64_t start;
+  int64_t finish;
+  std::vector<int64_t> viruses(k);
+  std::vector<std::vector<std::pair<int64_t, int64_t>>> adjacency_list(
+      n, std::vector<std::pair<int64_t, int64_t>>());
+
+  input(n, m, k, start, finish, viruses, adjacency_list);
+
+  int64_t ans = calc_min_time(n, m, k, start, finish, viruses, adjacency_list);
+
+  std::cout << ans << '\n';
+}
