@@ -3,32 +3,59 @@
 #include <stack>
 #include <vector>
 
-void dfs1(int v, std::vector<std::vector<int>>& adj, std::vector<bool>& visited, std::stack<int>& stk) {
+class Graph {
+public:
+    explicit Graph(int n) : adj_(n), rev_adj_(n) {}
+
+    void addEdge(int u, int v) {
+        adj_[u].push_back(v);
+        rev_adj_[v].push_back(u);
+    }
+
+    const std::vector<int>& getNeighbors(int v) const {
+        return adj_[v];
+    }
+
+    const std::vector<int>& getReverseNeighbors(int v) const {
+        return rev_adj_[v];
+    }
+
+    int size() const {
+        return adj_.size();
+    }
+
+private:
+    std::vector<std::vector<int>> adj_;
+    std::vector<std::vector<int>> rev_adj_;
+};
+
+void topologicalSort(int v, const Graph& graph, std::vector<bool>& visited, std::stack<int>& topological_order) {
     visited[v] = true;
-    for (int u : adj[v]) {
+    for (int u : graph.getNeighbors(v)) {
         if (!visited[u]) {
-            dfs1(u, adj, visited, stk);
+            topologicalSort(u, graph, visited, topological_order);
         }
     }
-    stk.push(v);
+    topological_order.push(v);
 }
 
-void dfs2(int v, std::vector<std::vector<int>>& adj, std::vector<bool>& visited, std::vector<int>& component, int comp_num) {
+void stronglyConnectedComponents(int v, const Graph& graph, std::vector<bool>& visited, std::vector<int>& component, int comp_num) {
     visited[v] = true;
     component[v] = comp_num;
-    for (int u : adj[v]) {
+    for (int u : graph.getReverseNeighbors(v)) {
         if (!visited[u]) {
-            dfs2(u, adj, visited, component, comp_num);
+            stronglyConnectedComponents(u, graph, visited, component, comp_num);
         }
     }
 }
 
-void findStronglyConnectedComponents(std::vector<std::vector<int>>& adj, std::vector<std::vector<int>>& rev_adj, int n, int& comp_num, std::vector<int>& component) {
+void findStronglyConnectedComponents(const Graph& graph, int& comp_num, std::vector<int>& component) {
+    int n = graph.size();
     std::vector<bool> visited(n, false);
     std::stack<int> stk;
     for (int i = 0; i < n; ++i) {
         if (!visited[i]) {
-            dfs1(i, adj, visited, stk);
+            topologicalSort(i, graph, visited, stk);
         }
     }
 
@@ -37,7 +64,7 @@ void findStronglyConnectedComponents(std::vector<std::vector<int>>& adj, std::ve
         int v = stk.top();
         stk.pop();
         if (component[v] == -1) {
-            dfs2(v, rev_adj, visited, component, comp_num);
+            stronglyConnectedComponents(v, graph, visited, component, comp_num);
             ++comp_num;
         }
     }
@@ -46,17 +73,16 @@ void findStronglyConnectedComponents(std::vector<std::vector<int>>& adj, std::ve
 int main() {
     int n, m;
     std::cin >> n >> m;
-    std::vector<std::vector<int>> adj(n), rev_adj(n);
+    Graph graph(n);
     for (int i = 0; i < m; ++i) {
         int u, v;
         std::cin >> u >> v;
-        adj[u - 1].push_back(v - 1);
-        rev_adj[v - 1].push_back(u - 1);
+        graph.addEdge(u - 1, v - 1);
     }
 
     int comp_num = 0;
     std::vector<int> component(n, -1);
-    findStronglyConnectedComponents(adj, rev_adj, n, comp_num, component);
+    findStronglyConnectedComponents(graph, comp_num, component);
 
     std::cout << comp_num << std::endl;
     for (int i = 0; i < n; ++i) {
