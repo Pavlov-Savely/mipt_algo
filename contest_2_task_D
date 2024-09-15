@@ -1,0 +1,94 @@
+#include <algorithm>
+#include <iostream>
+#include <stack>
+#include <vector>
+
+class Graph {
+public:
+    explicit Graph(int n) : adj_(n), rev_adj_(n) {}
+
+    void addEdge(int u, int v) {
+        adj_[u].push_back(v);
+        rev_adj_[v].push_back(u);
+    }
+
+    const std::vector<int>& getNeighbors(int v) const {
+        return adj_[v];
+    }
+
+    const std::vector<int>& getReverseNeighbors(int v) const {
+        return rev_adj_[v];
+    }
+
+    int size() const {
+        return adj_.size();
+    }
+
+private:
+    std::vector<std::vector<int>> adj_;
+    std::vector<std::vector<int>> rev_adj_;
+};
+
+void topologicalSort(int v, const Graph& graph, std::vector<bool>& visited, std::stack<int>& topological_order) {
+    visited[v] = true;
+    for (int u : graph.getNeighbors(v)) {
+        if (!visited[u]) {
+            topologicalSort(u, graph, visited, topological_order);
+        }
+    }
+    topological_order.push(v);
+}
+
+void stronglyConnectedComponents(int v, const Graph& graph, std::vector<bool>& visited, std::vector<int>& component, int comp_num) {
+    visited[v] = true;
+    component[v] = comp_num;
+    for (int u : graph.getReverseNeighbors(v)) {
+        if (!visited[u]) {
+            stronglyConnectedComponents(u, graph, visited, component, comp_num);
+        }
+    }
+}
+
+void findStronglyConnectedComponents(const Graph& graph, int& comp_num, std::vector<int>& component) {
+    int n = graph.size();
+    std::vector<bool> visited(n, false);
+    std::stack<int> stk;
+    for (int i = 0; i < n; ++i) {
+        if (!visited[i]) {
+            topologicalSort(i, graph, visited, stk);
+        }
+    }
+
+    std::fill(visited.begin(), visited.end(), false);
+    while (!stk.empty()) {
+        int v = stk.top();
+        stk.pop();
+        if (component[v] == -1) {
+            stronglyConnectedComponents(v, graph, visited, component, comp_num);
+            ++comp_num;
+        }
+    }
+}
+
+int main() {
+    int n, m;
+    std::cin >> n >> m;
+    Graph graph(n);
+    for (int i = 0; i < m; ++i) {
+        int u, v;
+        std::cin >> u >> v;
+        graph.addEdge(u - 1, v - 1);
+    }
+
+    int comp_num = 0;
+    std::vector<int> component(n, -1);
+    findStronglyConnectedComponents(graph, comp_num, component);
+
+    std::cout << comp_num << std::endl;
+    for (int i = 0; i < n; ++i) {
+        std::cout << component[i] + 1 << " ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}
